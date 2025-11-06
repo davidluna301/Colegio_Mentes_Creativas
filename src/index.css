@@ -1,7 +1,1 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-body {
-    font-family: "Comic Sans MS", "Poppins", sans-serif;
-}
+@import "tailwindcss";
