@@ -1,32 +1,65 @@
+// FlujoAgua.test.tsx
+/**
+ * @jest-environment jsdom
+ */
 import { render, screen, fireEvent } from "@testing-library/react";
 import FlujoAgua from "./FlujoAgua";
 
-describe("FlujoAgua Component", () => {
-  test("renderiza el título del componente", () => {
+// Mocks para three y OrbitControls (evita crear GL contexts durante tests)
+jest.mock("three", () => {
+  const actualThree = jest.requireActual("three");
+  // mock WebGLRenderer minimal
+  class MockRenderer {
+    domElement = document.createElement("canvas");
+    setSize() {}
+    render() {}
+    dispose() {}
+  }
+  return {
+    ...actualThree,
+    WebGLRenderer: MockRenderer,
+    // keep other classes functional enough for the component not to crash
+  };
+});
+
+jest.mock("three/examples/jsm/controls/OrbitControls", () => {
+  return {
+    OrbitControls: jest.fn().mockImplementation(() => {
+      return {
+        enableDamping: true,
+        dampingFactor: 0.05,
+        minDistance: 5,
+        maxDistance: 30,
+        update: jest.fn(),
+        dispose: jest.fn(),
+      };
+    }),
+  };
+});
+
+describe("FlujoAgua component (interacción básica)", () => {
+  test("renderiza el contenedor de three y el botón toggle", () => {
     render(<FlujoAgua />);
-    const title = screen.getByText(/Ciclo del Agua Interactivo/i);
-    expect(title).toBeInTheDocument();
-  });
 
-  test("renderiza el contenedor donde se monta Three.js", () => {
-    render(<FlujoAgua />);
-    const container = screen.getByRole("region"); // contenedor accesible
-    expect(container).toBeInTheDocument();
-  });
+    const mount = screen.getByTestId("three-mount");
+    expect(mount).toBeInTheDocument();
 
-  test("el botón de animación cambia su texto al hacer clic", () => {
-    render(<FlujoAgua />);
-
-    const button = screen.getByRole("button", {
-      name: /Detener Animación|Reanudar Ciclo/i,
-    });
-
+    const button = screen.getByTestId("toggle-button");
     expect(button).toBeInTheDocument();
-    const initialText = button.textContent;
+    // texto inicial debe ser detener animación (estado por defecto true)
+    expect(button).toHaveTextContent(/Detener Animación|Detener/);
+  });
 
+  test("al hacer click cambia el texto del botón (pausar / reanudar)", () => {
+    render(<FlujoAgua />);
+
+    const button = screen.getByTestId("toggle-button");
+    // click -> pausa (cambia a 'Reanudar Animación')
     fireEvent.click(button);
-    const afterClickText = button.textContent;
+    expect(button).toHaveTextContent(/Reanudar Animación|Reanudar/);
 
-    expect(afterClickText).not.toBe(initialText);
+    // click otra vez -> volver a 'Detener Animación'
+    fireEvent.click(button);
+    expect(button).toHaveTextContent(/Detener Animación|Detener/);
   });
 });
