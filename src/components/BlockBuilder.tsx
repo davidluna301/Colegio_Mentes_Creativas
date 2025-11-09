@@ -1,7 +1,7 @@
 // UI: Spanish (labels), Logic & comments: English
-import React, { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { Canvas, ThreeEvent } from "@react-three/fiber";
-import { OrbitControls, Grid, StatsGl } from "@react-three/drei";
+import { OrbitControls, Grid } from "@react-three/drei";
 import * as THREE from "three";
 
 type BlockType = "Tierra" | "Hierba" | "Piedra" | "Madera" | "Agua";
