@@ -6,6 +6,7 @@ import HomePage from "../views/HomePage";
 import LayoutsView from "../views/LayoutsView";
 import SettingsView from "../views/SettingsView";
 import FlujoAguaView from "../views/FlujoAguaView";
+import BlockBuilderView from "../views/BlockBuilderView";
 
 export default function AppRoutes() {
   return (
@@ -15,6 +16,7 @@ export default function AppRoutes() {
         <Route path="layouts" element={<LayoutsView />} />
         <Route path="settings" element={<SettingsView />} />
         <Route path="FlujoAgua" element={<FlujoAguaView />} />
+        <Route path="bloques" element={<BlockBuilderView />} />
       </Route>
     </Routes>
   );
