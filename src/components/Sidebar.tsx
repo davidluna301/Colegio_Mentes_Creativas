@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { FaHome, FaWater, FaCube, } from "react-icons/fa";
+import { FaHome, FaWater, FaCube, FaGlobeAmericas } from "react-icons/fa";
 
 interface SidebarItem {
   label: string;
@@ -12,6 +12,7 @@ const mainItems: SidebarItem[] = [
   { label: "Inicio", route: "/", icon: <FaHome /> },
   { label: "Ciclo del Agua", route: "/FlujoAgua", icon: <FaWater /> },
   { label: "Bloques 3D", route: "/bloques", icon: <FaCube /> },
+  { label: "Globo Interactivo", route: "/globo", icon: <FaGlobeAmericas /> },
 ];
 
 export default function Sidebar() {
