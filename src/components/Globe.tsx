@@ -1,5 +1,5 @@
 // UI: Spanish (labels). Logic & comments: English
-import React, { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Canvas, ThreeEvent, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -34,11 +34,9 @@ function latLonToVec3(lat: number, lon: number, radius: number) {
 function GlobeMesh({
   onPointerDown,
   spinning,
-  setSpinning
 }: {
   onPointerDown?: (e: ThreeEvent<MouseEvent>) => void;
   spinning: boolean;
-  setSpinning: (v: boolean) => void;
 }) {
   const ref = useRef<THREE.Mesh>(null!);
   useFrame((_, dt) => {
@@ -92,7 +90,7 @@ export default function Globe() {
         <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
           <ambientLight intensity={0.5} />
           <directionalLight position={[5, 5, 5]} intensity={0.9} />
-          <GlobeMesh spinning={spinning} setSpinning={setSpinning} />
+          <GlobeMesh spinning={spinning} />
           {CITIES.map((c) => (
             <CityMarker
               key={c.name}
