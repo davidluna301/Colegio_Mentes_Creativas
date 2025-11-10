@@ -5,9 +5,9 @@ import Layout from "../components/Layout";
 import HomePage from "../views/HomePage";
 import LayoutsView from "../views/LayoutsView";
 import SettingsView from "../views/SettingsView";
-import FlujoAguaView from "../views/FlujoAguaView";
 import BlockBuilderView from "../views/BlockBuilderView";
 import GlobeView from "../views/GlobeView";
+import FlujoAguaView from "../views/FlujoAguaView";
 
 export default function AppRoutes() {
   return (
@@ -16,9 +16,9 @@ export default function AppRoutes() {
         <Route index element={<HomePage />} />
         <Route path="layouts" element={<LayoutsView />} />
         <Route path="settings" element={<SettingsView />} />
-        <Route path="FlujoAgua" element={<FlujoAguaView />} />
         <Route path="bloques" element={<BlockBuilderView />} />
         <Route path="globo" element={<GlobeView />} />
+        <Route path="FlujoAgua" element={<FlujoAguaView paused={true} />} />
       </Route>
     </Routes>
   );
