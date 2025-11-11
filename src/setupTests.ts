@@ -52,14 +52,9 @@ Object.defineProperty(document, "dispatchEvent", {
 });
 
 // --- Mock canvas getContext to avoid WebGL issues in JSDOM ---
-// Provides a minimal stub so libraries trying to access 2D/3D contexts
-// won't throw in the test environment.
 if (!HTMLCanvasElement.prototype.getContext) {
   HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, _type: string) {
-    // Return a very small stub object that includes commonly-used functions.
-    // Tests / libs just need it to exist — it doesn't need to perform drawing.
     const stub: any = {
-      // 2D canvas ops
       fillRect: () => {},
       clearRect: () => {},
       getImageData: (_x: number, _y: number, _w: number, _h: number) => ({ data: [] }),
@@ -82,7 +77,6 @@ if (!HTMLCanvasElement.prototype.getContext) {
       measureText: () => ({ width: 0 }),
       transform: () => {},
       rect: () => {},
-      // WebGL related placeholders (some libs check existence)
       getExtension: () => null,
       createTexture: () => ({}),
       deleteTexture: () => {},
@@ -115,7 +109,6 @@ jest.mock("@react-three/fiber", () => {
 });
 
 jest.mock("@react-three/drei", () => {
-  // Todos los componentes devuelven null: suficiente para tests de UI fuera del canvas
   const NullCmp = () => null;
   return {
     OrbitControls: NullCmp,
@@ -167,30 +160,29 @@ jest.mock("three", () => {
   class DirectionalLight extends Light { castShadow = false; shadow: any = {}; }
   class AmbientLight extends Light {}
   class Material { constructor(_o?: any) {} }
-class MeshLambertMaterial extends Material {}
-class MeshBasicMaterial extends Material {}
-class MeshStandardMaterial extends Material {}
-class MeshPhongMaterial extends Material {}
-class Geometry {
-  attributes: Record<string, any> = {};
-  computeVertexNormals() {}
-}
-class BoxGeometry extends Geometry {
-  constructor(_w?: number, _h?: number, _d?: number) {
-    super();
-    this.attributes.position = { array: new Float32Array(180), needsUpdate: false };
+  class MeshLambertMaterial extends Material {}
+  class MeshBasicMaterial extends Material {}
+  class MeshStandardMaterial extends Material {}
+  class MeshPhongMaterial extends Material {}
+  class Geometry {
+    attributes: Record<string, any> = {};
+    computeVertexNormals() {}
   }
-}
-class ConeGeometry extends Geometry {
-  constructor(_r?: number, _h?: number, _segs?: number) {
-    super();
-    this.attributes.position = { array: new Float32Array(180), needsUpdate: false };
+  class BoxGeometry extends Geometry {
+    constructor(_w?: number, _h?: number, _d?: number) {
+      super();
+      this.attributes.position = { array: new Float32Array(180), needsUpdate: false };
+    }
   }
-}
+  class ConeGeometry extends Geometry {
+    constructor(_r?: number, _h?: number, _segs?: number) {
+      super();
+      this.attributes.position = { array: new Float32Array(180), needsUpdate: false };
+    }
+  }
   class PlaneGeometry extends Geometry {
     constructor(_w?: number, _h?: number, _sw?: number, _sh?: number) {
       super();
-      // Simula atributo position
       this.attributes.position = { array: new Float32Array(300), needsUpdate: false };
     }
   }
@@ -243,6 +235,10 @@ class ConeGeometry extends Geometry {
     SphereGeometry,
     BoxGeometry,
     ConeGeometry,
+    // Exporto estas clases para que TypeScript considere que se usan
+    BufferGeometry,
+    BufferAttribute,
+    PointsMaterial,
     MeshLambertMaterial,
     MeshBasicMaterial,
     MeshStandardMaterial,

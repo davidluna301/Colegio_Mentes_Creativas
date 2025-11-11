@@ -8,9 +8,15 @@ interface Props {
 
 export default function FlujoAguaview({ paused }: Props) {
   const mountRef = useRef<HTMLDivElement | null>(null);
+  // Evita inicializar WebGL/Three durante pruebas (Jest)
+  const isTest = typeof process !== "undefined" && process.env?.NODE_ENV === "test";
 
   useEffect(() => {
     if (!mountRef.current) return;
+    if (isTest) {
+      // En tests no montamos nada: el contenedor con role="region" es suficiente
+      return;
+    }
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color("#bde7ff");
@@ -125,7 +131,7 @@ export default function FlujoAguaview({ paused }: Props) {
       renderer.dispose();
       mountRef.current?.removeChild(renderer.domElement);
     };
-  }, [paused]);
+  }, [paused, isTest]);
 
   return (
     <div

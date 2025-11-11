@@ -11,7 +11,10 @@ export default function FlujoAgua() {
       </h1>
 
       {/* Viewer 3D */}
-      <div className="flex justify-center w-full h-[70vh]">
+      <div
+        className="flex justify-center w-full h-[70vh]"
+        aria-label="Visor 3D del ciclo del agua"
+      >
         <FlujoAguaview paused={paused} />
       </div>
 
@@ -29,11 +32,13 @@ export default function FlujoAgua() {
       {/* Menú acordeón */}
       <div className="mt-6 w-full max-w-4xl mx-auto space-y-3">
         <Acordeon titulo="Evaporación">
-          El sol calienta el agua del océano, que sube como vapor hacia la atmósfera.
+          El sol calienta el agua del océano, que sube como vapor hacia la
+          atmósfera.
         </Acordeon>
 
         <Acordeon titulo="Condensación">
-          El vapor se enfría en las alturas, formando nubes debido a la condensación.
+          El vapor se enfría en las alturas, formando nubes debido a la
+          condensación.
         </Acordeon>
 
         <Acordeon titulo="Precipitación">
@@ -45,7 +50,8 @@ export default function FlujoAgua() {
         </Acordeon>
 
         <Acordeon titulo="Infiltración">
-          Parte del agua se filtra en el suelo y viaja como corriente subterránea.
+          Parte del agua se filtra en el suelo y viaja como corriente
+          subterránea.
         </Acordeon>
       </div>
     </div>
@@ -81,5 +87,3 @@ function Acordeon({ titulo, children }: AcordeonProps) {
     </div>
   );
 }
-
-

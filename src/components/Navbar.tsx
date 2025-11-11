@@ -9,7 +9,11 @@ const Navbar = () => {
 
     if (saved) {
       root.classList.toggle("dark", saved === "dark");
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    } else if (
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+    ) {
       root.classList.add("dark");
     }
   }, []);
