@@ -1,7 +1,7 @@
 // src/components/Navbar.tsx
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 
-const Navbar: React.FC = () => {
+const Navbar = () => {
   // Inicializa el tema al cargar
   useEffect(() => {
     const root = document.documentElement;
