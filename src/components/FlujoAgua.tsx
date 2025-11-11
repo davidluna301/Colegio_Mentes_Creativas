@@ -8,23 +8,14 @@ export default function FlujoAgua() {
     <div className="flex flex-col w-full h-screen bg-[#dff3ff] text-black p-4">
       <h1 className="text-3xl font-bold text-center mb-4">
         Ciclo del Agua Interactivo 3D
-      </h1>
+</h1>
 
-<<<<<<< HEAD
-      {/* Viewer 3D */}
-      <div className="flex justify-center w-full h-[70vh]">
-        <FlujoAguaview paused={paused} />
-      </div>
-=======
-      <div
-        ref={mountRef}
-        role="region"
-        aria-label="Contenedor Three.js - Ciclo del Agua"
-        className="w-4/5 h-3/4 border-4 border-[#4fc3f7] rounded-2xl shadow-lg"
-      />
->>>>>>> 688ae11 (Solucion de test)
+{/* Viewer 3D */}
+<div className="flex justify-center w-full h-[70vh]">
+  <FlujoAguaview paused={paused} />
+</div>
 
-      {/* Botones */}
+{/* Botones */}
       <div className="flex justify-center gap-4 mt-4">
         <button
           onClick={() => setPaused(!paused)}

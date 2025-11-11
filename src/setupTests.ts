@@ -207,4 +207,3 @@ jest.mock("three", () => {
   "git.autofetch": true,
   "git.confirmSync": false,
   "git.pushMode": "current"
-}*/
