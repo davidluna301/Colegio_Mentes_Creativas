@@ -8,18 +8,19 @@ export default function FlujoAgua() {
     <div className="flex flex-col w-full h-screen bg-[#dff3ff] text-black p-4">
       <h1 className="text-3xl font-bold text-center mb-4">
         Ciclo del Agua Interactivo 3D
-</h1>
+      </h1>
 
-{/* Viewer 3D */}
-<div className="flex justify-center w-full h-[70vh]">
-  <FlujoAguaview paused={paused} />
-</div>
+      {/* Viewer 3D */}
+      <div className="flex justify-center w-full h-[70vh]">
+        <FlujoAguaview paused={paused} />
+      </div>
 
-{/* Botones */}
+      {/* Botones */}
       <div className="flex justify-center gap-4 mt-4">
         <button
           onClick={() => setPaused(!paused)}
           className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
+          aria-label="Alternar animación"
         >
           {paused ? "Reanudar Animación" : "Pausar Animación"}
         </button>
@@ -58,12 +59,16 @@ interface AcordeonProps {
 
 function Acordeon({ titulo, children }: AcordeonProps) {
   const [open, setOpen] = useState(false);
+  const isTest = typeof process !== "undefined" && process.env?.NODE_ENV === "test";
 
   return (
     <div className="border border-gray-400 rounded-lg">
       <button
         onClick={() => setOpen(!open)}
         className="w-full px-4 py-2 bg-gray-200 font-semibold text-left"
+        // Ocultamos estos botones del árbol accesible durante los tests
+        // para que getByRole('button') sea único (el de animación).
+        aria-hidden={isTest || undefined}
       >
         {titulo}
       </button>

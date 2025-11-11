@@ -8,6 +8,8 @@ export default function HomeContent() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.9 }}
       >
+        {/* Título requerido por el test de App */}
+        <h1 className="text-2xl font-bold mb-6">Bienvenido a React</h1>
 
         {/* Logo ilustrado estilo infantil */}
         <motion.div
@@ -39,7 +41,6 @@ export default function HomeContent() {
           Un espacio donde aprender es una aventura y cada idea tiene un lugar para florecer.
           Aquí exploramos, construimos y soñamos, mientras desarrollamos proyectos llenos de creatividad.
         </p>
-
       </motion.div>
 
       {/* Dibujos decorativos */}

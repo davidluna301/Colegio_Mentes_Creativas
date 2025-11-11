@@ -159,8 +159,10 @@ jest.mock("three", () => {
   class MeshBasicMaterial extends Material {}
   class MeshStandardMaterial extends Material {}
   class Geometry {}
-  class PlaneGeometry extends Geometry { constructor(_w?: number, _h?: number, _sw?: number, _sh?: number) { super(); } }
+  class PlaneGeometry extends Geometry { constructor(_w?: number, _h?: number) { super(); } }
   class SphereGeometry extends Geometry { constructor(_r?: number, _w?: number, _h?: number) { super(); } }
+  class BoxGeometry extends Geometry { constructor(_w?: number, _h?: number, _d?: number) { super(); } }
+  class ConeGeometry extends Geometry { constructor(_r?: number, _h?: number, _segs?: number) { super(); } }
   class BufferGeometry extends Geometry {
     attributes: Record<string, any> = {};
     setAttribute(name: string, attr: any) { this.attributes[name] = attr; }
@@ -178,7 +180,6 @@ jest.mock("three", () => {
   }
 
   return {
-    // Clases expuestas
     Vector3: Vec3,
     Color,
     Scene,
@@ -188,6 +189,8 @@ jest.mock("three", () => {
     AmbientLight,
     PlaneGeometry,
     SphereGeometry,
+    BoxGeometry,
+    ConeGeometry,
     MeshLambertMaterial,
     MeshBasicMaterial,
     MeshStandardMaterial,
@@ -196,8 +199,18 @@ jest.mock("three", () => {
     BufferAttribute,
     PointsMaterial,
     Points,
-    // Constantes típicas (si alguna lib las consulta)
     MathUtils: { degToRad: (d: number) => d * Math.PI / 180 },
+  };
+});
+
+// Mock de OrbitControls para FlujoAguaView
+jest.mock("three/examples/jsm/controls/OrbitControls", () => {
+  return {
+    OrbitControls: class {
+      constructor(_camera?: any, _dom?: any) {}
+      update() {}
+      dispose() {}
+    },
   };
 });
 
@@ -207,3 +220,28 @@ jest.mock("three", () => {
   "git.autofetch": true,
   "git.confirmSync": false,
   "git.pushMode": "current"
+}*/
+
+// --- Código de prueba ---
+
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+
+const FlujoAgua: React.FC = () => {
+  const [paused, setPaused] = React.useState(false);
+  return React.createElement(
+    "button",
+    { onClick: () => setPaused((p: boolean) => !p) },
+    paused ? "Reanudar Animación" : "Pausar Animación"
+  );
+};
+
+test("el botón de animación cambia su texto al hacer clic", () => {
+  render(React.createElement(FlujoAgua));
+  const button = screen.getByRole("button", { name: /Pausar Animación/i });
+
+  const initText = button.textContent;
+  fireEvent.click(button);
+
+  expect(button.textContent).not.toBe(initText);
+});
