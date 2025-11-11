@@ -1,13 +1,11 @@
 // src/components/Navbar.test.tsx
-import { render, screen} from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import Navbar from "./Navbar";
 
-// Limpia los mocks antes de cada prueba
 beforeEach(() => {
   jest.clearAllMocks();
 });
 
-// --- Pruebas de renderizado ---
 describe("Navbar - Renderizado", () => {
   test("renderiza el título principal 'UCC : Prácticas Desarrollo'", () => {
     render(<Navbar />);
@@ -19,4 +17,17 @@ describe("Navbar - Renderizado", () => {
     expect(screen.getByRole("button", { name: /Tema/i })).toBeInTheDocument();
   });
 });
+
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+if (typeof window.ResizeObserver === "undefined") {
+  (window as any).ResizeObserver = ResizeObserverMock;
+}
+if (typeof global.ResizeObserver === "undefined") {
+  (global as any).ResizeObserver = ResizeObserverMock;
+}
 

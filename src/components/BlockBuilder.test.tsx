@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import BlockBuilder from "../components/BlockBuilder";
+import BlockBuilder from "./BlockBuilder";
 
 test("renderiza controles de BlockBuilder", () => {
   render(<BlockBuilder />);

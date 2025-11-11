@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import Globe from "../components/Globe";
+import Globe from "./Globe";
 
 test("muestra datos básicos del globo", () => {
   render(<Globe />);
