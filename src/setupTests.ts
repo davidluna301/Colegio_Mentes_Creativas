@@ -109,20 +109,24 @@ if (typeof (global as any).ResizeObserver === "undefined") {
 // --- Mocks de react-three-fiber y drei para evitar montar WebGL en tests ---
 jest.mock("@react-three/fiber", () => {
   return {
-    Canvas: () => null,
+    Canvas: ({ children }: any) => (children ?? null),
     useFrame: () => {},
-    // Exporta tipos en build real; en tests no son necesarios
   };
 });
 
 jest.mock("@react-three/drei", () => {
+  // Todos los componentes devuelven null: suficiente para tests de UI fuera del canvas
+  const NullCmp = () => null;
   return {
-    OrbitControls: () => null,
-    Grid: () => null,
+    OrbitControls: NullCmp,
+    Grid: NullCmp,
+    Sky: NullCmp,
+    Stars: NullCmp,
+    ContactShadows: NullCmp,
   };
 });
 
-// --- Mock ligero de three para FlujoAgua (evita WebGLRenderer real) ---
+// --- Mock mejorado de three para FlujoAgua y Globe ---
 jest.mock("three", () => {
   class Vec3 {
     x = 0; y = 0; z = 0;
@@ -139,32 +143,64 @@ jest.mock("three", () => {
     add() {}
     remove() {}
   }
-  class Scene extends Object3D {}
+  class Scene extends Object3D {
+    background: any;
+    fog: any;
+  }
+  class Fog {
+    constructor(_hex: any, _near: number, _far: number) {}
+  }
   class Camera extends Object3D {}
   class PerspectiveCamera extends Camera {
     constructor(_fov?: number, _a?: number, _n?: number, _f?: number) { super(); }
+    position = new Vec3();
   }
   class WebGLRenderer {
     domElement = global.document?.createElement?.("canvas") ?? { };
     constructor(_opts?: any) {}
+    setPixelRatio() {}
     setSize() {}
     render() {}
     dispose() {}
   }
   class Light extends Object3D { constructor(_c?: any, _i?: number) { super(); } }
-  class DirectionalLight extends Light {}
+  class DirectionalLight extends Light { castShadow = false; shadow: any = {}; }
   class AmbientLight extends Light {}
   class Material { constructor(_o?: any) {} }
-  class MeshLambertMaterial extends Material {}
-  class MeshBasicMaterial extends Material {}
-  class MeshStandardMaterial extends Material {}
-  class Geometry {}
-  class PlaneGeometry extends Geometry { constructor(_w?: number, _h?: number) { super(); } }
-  class SphereGeometry extends Geometry { constructor(_r?: number, _w?: number, _h?: number) { super(); } }
-  class BoxGeometry extends Geometry { constructor(_w?: number, _h?: number, _d?: number) { super(); } }
-  class ConeGeometry extends Geometry { constructor(_r?: number, _h?: number, _segs?: number) { super(); } }
+class MeshLambertMaterial extends Material {}
+class MeshBasicMaterial extends Material {}
+class MeshStandardMaterial extends Material {}
+class MeshPhongMaterial extends Material {}
+class Geometry {
+  attributes: Record<string, any> = {};
+  computeVertexNormals() {}
+}
+class BoxGeometry extends Geometry {
+  constructor(_w?: number, _h?: number, _d?: number) {
+    super();
+    this.attributes.position = { array: new Float32Array(180), needsUpdate: false };
+  }
+}
+class ConeGeometry extends Geometry {
+  constructor(_r?: number, _h?: number, _segs?: number) {
+    super();
+    this.attributes.position = { array: new Float32Array(180), needsUpdate: false };
+  }
+}
+  class PlaneGeometry extends Geometry {
+    constructor(_w?: number, _h?: number, _sw?: number, _sh?: number) {
+      super();
+      // Simula atributo position
+      this.attributes.position = { array: new Float32Array(300), needsUpdate: false };
+    }
+  }
+  class SphereGeometry extends Geometry {
+    constructor(_r?: number, _w?: number, _h?: number) {
+      super();
+      this.attributes.position = { array: new Float32Array(240), needsUpdate: false };
+    }
+  }
   class BufferGeometry extends Geometry {
-    attributes: Record<string, any> = {};
     setAttribute(name: string, attr: any) { this.attributes[name] = attr; }
   }
   class BufferAttribute {
@@ -173,16 +209,32 @@ jest.mock("three", () => {
   }
   class PointsMaterial extends Material {}
   class Mesh extends Object3D {
-    constructor(_g?: any, _m?: any) { super(); }
+    geometry: any;
+    material: any;
+    castShadow = false;
+    receiveShadow = false;
+    constructor(g?: any, m?: any) {
+      super();
+      this.geometry = g ?? {};
+      this.material = m ?? {};
+    }
   }
   class Points extends Object3D {
-    constructor(_g?: any, _m?: any) { super(); }
+    geometry: any;
+    material: any;
+    constructor(g?: any, m?: any) {
+      super();
+      this.geometry = g ?? {};
+      this.material = m ?? {};
+    }
   }
+  const AdditiveBlending = 2;
 
   return {
     Vector3: Vec3,
     Color,
     Scene,
+    Fog,
     PerspectiveCamera,
     WebGLRenderer,
     DirectionalLight,
@@ -194,11 +246,10 @@ jest.mock("three", () => {
     MeshLambertMaterial,
     MeshBasicMaterial,
     MeshStandardMaterial,
+    MeshPhongMaterial,
     Mesh,
-    BufferGeometry,
-    BufferAttribute,
-    PointsMaterial,
     Points,
+    AdditiveBlending,
     MathUtils: { degToRad: (d: number) => d * Math.PI / 180 },
   };
 });

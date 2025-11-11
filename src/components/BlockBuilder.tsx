@@ -1,7 +1,7 @@
 // UI: Spanish (labels), Logic & comments: English
 import { useState, useCallback, useRef, useMemo } from "react";
 import { Canvas, ThreeEvent } from "@react-three/fiber";
-import { OrbitControls, Grid } from "@react-three/drei";
+import { OrbitControls, Grid, ContactShadows, Sky } from "@react-three/drei";
 import * as THREE from "three";
 
 type BlockType = "Tierra" | "Hierba" | "Piedra" | "Madera" | "Agua";
@@ -184,7 +184,19 @@ export default function BlockBuilder() {
 
       {/* Canvas */}
       <div className="flex-1 min-h-[420px] rounded-xl overflow-hidden shadow bg-sky-50 dark:bg-slate-900">
-        <Canvas shadows camera={{ position: [8, 8, 8], fov: 45 }}>
+        <Canvas
+          shadows
+          dpr={[1, 2]}
+          gl={{ antialias: true }}
+          camera={{ position: [8, 8, 8], fov: 45 }}
+        >
+          {/* Cielo físico y luz ambiente sutil */}
+          <Sky
+            distance={450000}
+            sunPosition={[100, 20, 100]}
+            inclination={0.49}
+            azimuth={0.25}
+          />
           <ambientLight intensity={0.4} />
           <directionalLight
             position={[8, 12, 10]}
@@ -193,6 +205,7 @@ export default function BlockBuilder() {
             shadow-mapSize-width={2048}
             shadow-mapSize-height={2048}
           />
+
           {/* Ground plane */}
           <mesh
             rotation={[-Math.PI / 2, 0, 0]}
@@ -204,19 +217,19 @@ export default function BlockBuilder() {
             <meshStandardMaterial color={"#e3f2fd"} />
           </mesh>
 
-          {/* Nice grid helper */}
+          {/* Grid helper suave */}
           <Grid
             args={[60, 60]}
             cellSize={1}
-            cellThickness={0.8}
-            cellColor="#bbdefb"
+            cellThickness={0.6}
+            cellColor="#cfe8ff"
             sectionSize={5}
             sectionColor="#90caf9"
-            fadeDistance={40}
+            fadeDistance={45}
             infiniteGrid
           />
 
-          {/* Render voxels */}
+          {/* Voxels */}
           {voxelEntries.map(([key, type]) => {
             const [x, y, z] = parseKey(key);
             return (
@@ -229,8 +242,18 @@ export default function BlockBuilder() {
             );
           })}
 
+          {/* Sombras suaves bajo los bloques */}
+          <ContactShadows
+            position={[0, 0.01, 0]}
+            opacity={0.4}
+            scale={80}
+            blur={2.5}
+            far={15}
+            resolution={1024}
+            color="#80bfff"
+          />
+
           <OrbitControls makeDefault />
-          {/* <StatsGl /> Uncomment if you want a small FPS meter */}
         </Canvas>
       </div>
 

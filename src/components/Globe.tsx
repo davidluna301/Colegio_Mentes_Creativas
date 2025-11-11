@@ -1,7 +1,7 @@
 // UI: Spanish (labels). Logic & comments: English
 import { useMemo, useRef, useState } from "react";
 import { Canvas, ThreeEvent, useFrame } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { OrbitControls, Stars, Sky } from "@react-three/drei";
 import * as THREE from "three";
 
 type City = {
@@ -44,15 +44,30 @@ function GlobeMesh({
     if (spinning && ref.current) ref.current.rotation.y += dt * 0.2;
   });
   return (
-    <mesh ref={ref} onPointerDown={onPointerDown}>
-      <sphereGeometry args={[3, 64, 64]} />
-      <meshStandardMaterial color="#90caf9" roughness={0.8} metalness={0.0} />
-      {/* Simple continents silhouette using slightly extruded noise (fake) */}
-      <mesh>
-        <sphereGeometry args={[3.01, 64, 64]} />
-        <meshStandardMaterial color="#4caf50" wireframe opacity={0.4} transparent />
+    <group>
+      {/* Base planet */}
+      <mesh ref={ref} onPointerDown={onPointerDown} castShadow receiveShadow>
+        <sphereGeometry args={[3, 96, 96]} />
+        <meshStandardMaterial color="#9bd1ff" roughness={0.85} metalness={0.0} />
+        {/* Simple continents wireframe layer */}
+        <mesh>
+          <sphereGeometry args={[3.01, 96, 96]} />
+          <meshStandardMaterial color="#4caf50" wireframe opacity={0.35} transparent />
+        </mesh>
       </mesh>
-    </mesh>
+
+      {/* Atmosphere glow (subtle) */}
+      <mesh>
+        <sphereGeometry args={[3.15, 64, 64]} />
+        <meshBasicMaterial
+          color="#5ecbff"
+          transparent
+          opacity={0.12}
+          blending={THREE.AdditiveBlending}
+          side={THREE.BackSide}
+        />
+      </mesh>
+    </group>
   );
 }
 
@@ -73,9 +88,11 @@ function CityMarker({
         e.stopPropagation();
         onSelect(city);
       }}
+      castShadow
+      receiveShadow
     >
-      <sphereGeometry args={[selected ? 0.12 : 0.08, 16, 16]} />
-      <meshStandardMaterial color={selected ? "#ff7043" : "#fdd835"} />
+      <sphereGeometry args={[selected ? 0.12 : 0.085, 16, 16]} />
+      <meshStandardMaterial color={selected ? "#ff7043" : "#fdd835"} emissive={selected ? "#ff7043" : "#fdd835"} emissiveIntensity={0.2}/>
     </mesh>
   );
 }
@@ -87,9 +104,13 @@ export default function Globe() {
   return (
     <div className="w-full h-full flex flex-col gap-3">
       <div className="flex-1 min-h-[420px] rounded-xl overflow-hidden shadow bg-slate-100 dark:bg-slate-900">
-        <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
+        <Canvas shadows camera={{ position: [0, 0, 8], fov: 45 }} dpr={[1, 2]} gl={{ antialias: true }}>
+          {/* Stars + sky for depth */}
+          <Stars radius={80} depth={50} count={3000} factor={4} saturation={0} fade />
+          <Sky distance={450000} sunPosition={[10, 3, -10]} inclination={0.52} azimuth={0.2} />
+
           <ambientLight intensity={0.5} />
-          <directionalLight position={[5, 5, 5]} intensity={0.9} />
+          <directionalLight position={[5, 5, 5]} intensity={0.9} castShadow shadow-mapSize={[1024, 1024]} />
           <GlobeMesh spinning={spinning} />
           {CITIES.map((c) => (
             <CityMarker
