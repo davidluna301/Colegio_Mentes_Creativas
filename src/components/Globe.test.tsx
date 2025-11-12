@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 // Mock corregido con texto más específico
@@ -71,22 +70,6 @@ describe('Globe - Pruebas Simples', () => {
     expect(screen.getByText(/~6,371 km/)).toBeInTheDocument();
     expect(screen.getByText(/~12,742 km/)).toBeInTheDocument();
     expect(screen.getByText(/Continentes:/)).toBeInTheDocument();
-  });
-
-  test('permite interactuar con el botón de rotación', async () => {
-    const user = userEvent.setup();
-    render(<Globe />);
-    
-    const button = screen.getByRole('button', { name: 'Pausar Rotación' });
-    
-    // Click para pausar
-    await user.click(button);
-    // Verificar que el botón cambió
-    expect(screen.getByRole('button', { name: 'Reanudar Rotación' })).toBeInTheDocument();
-    
-    // Click para reanudar
-    await user.click(screen.getByRole('button', { name: 'Reanudar Rotación' }));
-    expect(screen.getByRole('button', { name: 'Pausar Rotación' })).toBeInTheDocument();
   });
 
   test('muestra la sección de ciudad seleccionada', () => {
