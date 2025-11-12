@@ -4,9 +4,7 @@ import FlujoAgua from "./FlujoAgua";
 describe("FlujoAgua Component", () => {
   test("renderiza el título principal", () => {
     render(<FlujoAgua />);
-    expect(
-      screen.getByText(/Ciclo del Agua Interactivo/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Ciclo del Agua/i)).toBeInTheDocument();
   });
 
   test("renderiza el contenedor del modelo 3D", () => {
@@ -15,14 +13,18 @@ describe("FlujoAgua Component", () => {
     expect(viewer).toBeInTheDocument();
   });
 
-  test("el botón de animación cambia su texto al hacer clic", () => {
+  test("el botón pausa y reanuda cambiando texto y clase", () => {
     render(<FlujoAgua />);
     const button = screen.getByRole("button");
+    const container = screen.getByTestId("water-cycle");
 
-    const initText = button.textContent;
+    expect(container.className).not.toMatch(/paused/);
     fireEvent.click(button);
-    const finalText = button.textContent;
-
-    expect(initText).not.toBe(finalText);
+    expect(container.className).toMatch(/paused/);
+    const firstText = button.textContent;
+    fireEvent.click(button);
+    const secondText = button.textContent;
+    expect(firstText).not.toBe(secondText);
+    expect(container.className).not.toMatch(/paused/);
   });
 });

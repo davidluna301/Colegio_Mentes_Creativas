@@ -188,3 +188,82 @@
 .animate-flow {
   animation: flow 2s ease-in-out infinite;
 }
+
+/* Nuevas animaciones para el ciclo del agua SVG */
+@keyframes cycle-evaporate {
+  0% { transform: translateY(0) scale(1); opacity: 0.9; }
+  85% { opacity: 0.15; }
+  100% { transform: translateY(-120px) scale(0.6); opacity: 0; }
+}
+
+@keyframes cycle-condense {
+  0% { transform: translateY(-40px) scale(0.8); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes cycle-rain {
+  0% { transform: translateY(-140px); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(0); opacity: 0; }
+}
+
+@keyframes cycle-flow {
+  0% { stroke-dashoffset: 32; opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0.6; }
+}
+
+@keyframes cycle-wave {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+  100% { transform: translateY(0); }
+}
+
+.animate-cycle-evaporate { animation: cycle-evaporate 4.5s linear infinite; }
+.animate-cycle-condense { animation: cycle-condense 3.5s ease-in-out infinite alternate; }
+.animate-cycle-rain { animation: cycle-rain 3.2s linear infinite; }
+.animate-cycle-flow { animation: cycle-flow 3.4s ease-in-out infinite; }
+.animate-cycle-wave { animation: cycle-wave 5.5s ease-in-out infinite; }
+
+/* Pausa global del ciclo */
+.water-cycle.paused .animate-cycle-evaporate,
+.water-cycle.paused .animate-cycle-condense,
+.water-cycle.paused .animate-cycle-rain,
+.water-cycle.paused .animate-cycle-flow,
+.water-cycle.paused .animate-cycle-wave,
+.water-cycle.paused .animate-pulse {
+  animation-play-state: paused !important;
+}
+
+/* Corrientes horizontales para componente WaterFlow */
+@keyframes stream-move {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.flow-stream {
+  width: 180%;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,0.4) 0 12px, rgba(255,255,255,0.15) 12px 24px);
+  animation: stream-move 9s linear infinite;
+  mix-blend-mode: screen;
+  filter: blur(2px);
+}
+
+.water-cycle.paused ~ .flow-stream,
+.water-cycle.paused .flow-stream {
+  animation-play-state: paused !important;
+}
+
+/* Lluvia dinámica manual (ya no usa animación CSS para caída) */
+.rain-drop {
+  fill: #0ea5e9;
+  opacity: 0.85;
+  transform-box: fill-box;
+  transform-origin: center;
+  filter: drop-shadow(0 0 3px rgba(14,165,233,0.4));
+  transition: opacity 0.3s linear;
+}
+
+.water-cycle.paused .rain-drop { opacity: 0.4; }
