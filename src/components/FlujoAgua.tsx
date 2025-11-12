@@ -1,8 +1,23 @@
 import FlujoAguaview from "../views/FlujoAguaView";
 import { useState } from "react";
 
-export default function FlujoAgua() {
-  const [paused, setPaused] = useState(false);
+// Props de configuración para el componente principal.
+// Permiten inicializar el estado y reaccionar a los cambios desde un padre.
+export interface FlujoAguaProps {
+  initialPaused?: boolean;
+  onPauseChange?: (paused: boolean) => void;
+}
+
+export default function FlujoAgua({ initialPaused = false, onPauseChange }: FlujoAguaProps) {
+  const [paused, setPaused] = useState(initialPaused);
+
+  const togglePaused = () => {
+    setPaused((prev) => {
+      const next = !prev;
+      if (onPauseChange) onPauseChange(next);
+      return next;
+    });
+  };
 
   return (
     <div className="flex flex-col w-full h-screen bg-[#dff3ff] text-black p-4">
@@ -21,7 +36,7 @@ export default function FlujoAgua() {
       {/* Botones */}
       <div className="flex justify-center gap-4 mt-4">
         <button
-          onClick={() => setPaused(!paused)}
+          onClick={togglePaused}
           className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
           aria-label="Alternar animación"
         >
