@@ -1,6 +1,6 @@
 // UI: Spanish (labels), Logic & comments: English
-import { useState, useCallback, useRef, useMemo } from "react";
-import { Canvas, ThreeEvent } from "@react-three/fiber";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import { Canvas, ThreeEvent, useFrame } from "@react-three/fiber";
 import { OrbitControls, Grid, ContactShadows, Sky } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -27,6 +27,20 @@ function Voxel({
   onClickVoxel: (e: ThreeEvent<MouseEvent>) => void;
 }) {
   const ref = useRef<THREE.Mesh>(null!);
+  // simple spawn animation: scale from 0.2 -> 1
+  useEffect(() => {
+    if (!ref.current) return;
+    ref.current.scale.setScalar(0.2);
+  }, []);
+
+  useFrame((_, delta) => {
+    if (!ref.current) return;
+    // lerp scale to 1
+    const s = ref.current.scale.x;
+    const ns = s + (1 - s) * Math.min(1, delta * 8);
+    ref.current.scale.setScalar(ns);
+  });
+
   return (
     <mesh
       ref={ref}
@@ -57,6 +71,10 @@ export default function BlockBuilder() {
   const [tipo, setTipo] = useState<BlockType>("Hierba");
   const [mode, setMode] = useState<Mode>("Construir");
   const [exportText, setExportText] = useState<string>("");
+  const [lastAction, setLastAction] = useState<
+    | { type: "add" | "remove"; key: string; block?: BlockType }
+    | undefined
+  >(undefined);
 
   // Add voxel at integer position if empty
   const addVoxel = useCallback((x: number, y: number, z: number, t?: BlockType) => {
@@ -65,6 +83,10 @@ export default function BlockBuilder() {
       if (prev.has(k)) return prev;
       const next = new Map(prev);
       next.set(k, t ?? tipo);
+      // store last action for undo
+      setLastAction({ type: "add", key: k, block: t ?? tipo });
+      // sound feedback
+      playSound("place");
       return next;
     });
   }, [tipo]);
@@ -75,10 +97,35 @@ export default function BlockBuilder() {
     setVoxels((prev) => {
       if (!prev.has(k)) return prev;
       const next = new Map(prev);
+      const removed = prev.get(k);
       next.delete(k);
+      setLastAction({ type: "remove", key: k, block: removed });
+      playSound("remove");
       return next;
     });
   }, []);
+
+  // simple sound generator using WebAudio
+  function playSound(kind: "place" | "remove" | "error") {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g);
+      g.connect(ctx.destination);
+      if (kind === "place") o.frequency.value = 880;
+      if (kind === "remove") o.frequency.value = 440;
+      if (kind === "error") o.frequency.value = 220;
+      g.gain.value = 0.05;
+      o.start();
+      setTimeout(() => {
+        o.stop();
+        ctx.close();
+      }, 120);
+    } catch (e) {
+      // ignore audio errors in some environments
+    }
+  }
 
   // Handle clicking on existing voxel: place adjacent (build) or delete
   const handleVoxelPointer = useCallback((e: ThreeEvent<MouseEvent>) => {
@@ -116,20 +163,53 @@ export default function BlockBuilder() {
   const exportJSON = useCallback(() => {
     const arr: VoxelData[] = [];
     voxels.forEach((type, key) => arr.push({ key, type }));
-    setExportText(JSON.stringify(arr, null, 2));
+    const out = JSON.stringify(arr);
+    setExportText(out);
+    // copy to clipboard to make it easy for kids/teacher
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(out).then(() => {
+        alert("Guardado en portapapeles ✔");
+      });
+    }
   }, [voxels]);
 
   // Import from JSON pasted by the user
   const importJSON = useCallback(() => {
     try {
-      const arr = JSON.parse(exportText) as VoxelData[];
+      const text = exportText || prompt("Pega el JSON aquí:") || "";
+      const arr = JSON.parse(text) as VoxelData[];
       const map = new Map<string, BlockType>();
       for (const v of arr) map.set(v.key, v.type);
       setVoxels(map);
+      playSound("place");
     } catch (err) {
+      playSound("error");
       alert("JSON inválido");
     }
   }, [exportText]);
+
+  const undo = useCallback(() => {
+    const act = lastAction;
+    if (!act) return playSound("error");
+    if (act.type === "add") {
+      // remove the added
+      setVoxels((prev) => {
+        const next = new Map(prev);
+        next.delete(act.key);
+        return next;
+      });
+      playSound("remove");
+    } else if (act.type === "remove") {
+      // restore removed
+      setVoxels((prev) => {
+        const next = new Map(prev);
+        if (act.block) next.set(act.key, act.block);
+        return next;
+      });
+      playSound("place");
+    }
+    setLastAction(undefined);
+  }, [lastAction]);
 
   const clearAll = useCallback(() => setVoxels(new Map()), []);
 
@@ -138,52 +218,51 @@ export default function BlockBuilder() {
 
   return (
     <div className="w-full h-full flex flex-col gap-3">
-      {/* Controls */}
-      <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl bg-white/70 dark:bg-slate-800 shadow">
-        <span className="font-semibold mr-2">Modo:</span>
-        <div className="inline-flex rounded-lg overflow-hidden border">
+      {/* Controls - kid friendly (horizontal info inline) */}
+      <div className="flex items-center gap-3 p-3 rounded-xl bg-white/90 shadow">
+        <div className="flex gap-2">
           <button
-            className={`px-3 py-2 ${mode === "Construir" ? "bg-sky-500 text-white" : "bg-white dark:bg-slate-700"}`}
+            aria-label="Construir"
+            title="Construir"
+            className={`text-2xl w-14 h-14 rounded-full flex items-center justify-center ${mode === "Construir" ? "bg-sky-500 text-white" : "bg-white"}`}
             onClick={() => setMode("Construir")}
           >
-            Construir
+            🔨
           </button>
           <button
-            className={`px-3 py-2 ${mode === "Borrar" ? "bg-rose-500 text-white" : "bg-white dark:bg-slate-700"}`}
+            aria-label="Borrar"
+            title="Borrar"
+            className={`text-2xl w-14 h-14 rounded-full flex items-center justify-center ${mode === "Borrar" ? "bg-rose-400 text-white" : "bg-white"}`}
             onClick={() => setMode("Borrar")}
           >
-            Borrar
+            🧹
           </button>
         </div>
 
-        <label className="ml-4 font-semibold">Bloque:</label>
-        <select
-          className="border rounded-md px-2 py-2 bg-white dark:bg-slate-700"
-          value={tipo}
-          onChange={(e) => setTipo(e.target.value as BlockType)}
-        >
-          {Object.keys(BLOCK_COLOR).map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+        <div className="flex gap-2">
+          {/* block picker as big colored buttons with emoji */}
+          <button className={`w-12 h-12 rounded-full flex items-center justify-center text-lg`} style={{ background: BLOCK_COLOR.Hierba }} onClick={() => setTipo("Hierba")}>🟩</button>
+          <button className={`w-12 h-12 rounded-full flex items-center justify-center text-lg`} style={{ background: BLOCK_COLOR.Tierra }} onClick={() => setTipo("Tierra")}>🟫</button>
+          <button className={`w-12 h-12 rounded-full flex items-center justify-center text-lg`} style={{ background: BLOCK_COLOR.Piedra }} onClick={() => setTipo("Piedra")}>⬜</button>
+          <button className={`w-12 h-12 rounded-full flex items-center justify-center text-lg`} style={{ background: BLOCK_COLOR.Madera }} onClick={() => setTipo("Madera")}>🪵</button>
+          <button className={`w-12 h-12 rounded-full flex items-center justify-center text-lg`} style={{ background: BLOCK_COLOR.Agua }} onClick={() => setTipo("Agua")}>💧</button>
+        </div>
+
+        {/* short horizontal hint */}
+        <span className="text-sm opacity-80 hidden md:inline">
+          Toca el piso para poner bloques. Usa 🧹 para borrar. Mantén Shift para borrar rápido.
+        </span>
 
         <div className="ml-auto flex gap-2">
-          <button className="px-3 py-2 rounded-md bg-emerald-500 text-white" onClick={exportJSON}>
-            Exportar
-          </button>
-          <button className="px-3 py-2 rounded-md bg-indigo-500 text-white" onClick={importJSON}>
-            Importar
-          </button>
-          <button className="px-3 py-2 rounded-md bg-slate-500 text-white" onClick={clearAll}>
-            Reiniciar
-          </button>
+          <button className="px-3 py-2 rounded-full bg-emerald-500 text-white" onClick={exportJSON}>💾</button>
+          <button className="px-3 py-2 rounded-full bg-indigo-500 text-white" onClick={importJSON}>📥</button>
+          <button className="px-3 py-2 rounded-full bg-slate-500 text-white" onClick={() => { clearAll(); playSound("remove"); }}>🔄</button>
+          <button className="px-3 py-2 rounded-full bg-yellow-400 text-white" onClick={undo}>↶</button>
         </div>
       </div>
 
       {/* Canvas */}
-      <div className="flex-1 min-h-[420px] rounded-xl overflow-hidden shadow bg-sky-50 dark:bg-slate-900">
+      <div className="flex-1 min-h-[420px] rounded-xl overflow-hidden shadow bg-sky-50">
         <Canvas
           shadows
           dpr={[1, 2]}
@@ -253,22 +332,10 @@ export default function BlockBuilder() {
             color="#80bfff"
           />
 
-          <OrbitControls makeDefault />
+          <OrbitControls makeDefault enablePan={false} minDistance={6} maxDistance={30} />
         </Canvas>
       </div>
-
-      {/* Import/Export area */}
-      <div className="rounded-xl bg-white/70 dark:bg-slate-800 p-3 shadow">
-        <p className="text-sm opacity-80 mb-1">
-          Copia/pega aquí para guardar o cargar tu construcción (JSON).
-        </p>
-        <textarea
-          value={exportText}
-          onChange={(e) => setExportText(e.target.value)}
-          placeholder="[]"
-          className="w-full h-32 p-2 rounded-md border bg-white dark:bg-slate-900"
-        />
-      </div>
+      {/* No extra info section: keep screen clean for kids */}
     </div>
   );
 }

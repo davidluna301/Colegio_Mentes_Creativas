@@ -103,6 +103,35 @@ export default function Globe() {
 
   return (
     <div className="w-full h-full flex flex-col gap-3">
+      {/* Top bar: keep only essential info horizontally */}
+      <div className="flex items-center gap-3 p-3 rounded-xl bg-white/90 shadow">
+        <button
+          aria-label={spinning ? "Pausar rotación" : "Reanudar rotación"}
+          title={spinning ? "Pausar rotación" : "Reanudar rotación"}
+          className={`text-xl w-12 h-12 rounded-full flex items-center justify-center ${spinning ? "bg-indigo-500 text-white" : "bg-white"}`}
+          onClick={() => setSpinning((s) => !s)}
+        >
+          {spinning ? "⏸️" : "▶️"}
+        </button>
+
+        {/* Selected city info (essential) */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <span>
+            <strong>Ciudad:</strong> {selected ? `${selected.name} (${selected.country})` : "—"}
+          </span>
+          {selected?.population && (
+            <span>
+              <strong>Población:</strong> {selected.population.toLocaleString("es-CO")}
+            </span>
+          )}
+          {selected && (
+            <span>
+              <strong>Lat/Lon:</strong> {selected.lat.toFixed(2)}°, {selected.lon.toFixed(2)}°
+            </span>
+          )}
+        </div>
+      </div>
+
       <div className="flex-1 min-h-[420px] rounded-xl overflow-hidden shadow bg-slate-100 dark:bg-slate-900">
         <Canvas shadows camera={{ position: [0, 0, 8], fov: 45 }} dpr={[1, 2]} gl={{ antialias: true }}>
           {/* Stars + sky for depth */}
@@ -122,49 +151,14 @@ export default function Globe() {
           ))}
           <OrbitControls
             enablePan={false}
+            minDistance={5}
+            maxDistance={16}
             onStart={() => setSpinning(false)}
             onEnd={() => setSpinning(true)}
           />
         </Canvas>
       </div>
-
-      {/* Info row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="rounded-xl bg-white/70 dark:bg-slate-800 p-4 shadow">
-          <h3 className="font-bold text-lg mb-2">Datos básicos 🌍</h3>
-          <ul className="text-sm space-y-1">
-            <li><strong>Radio:</strong> ~6,371 km</li>
-            <li><strong>Diámetro:</strong> ~12,742 km</li>
-            <li><strong>Edad:</strong> ~4.54 mil millones de años</li>
-            <li><strong>Continentes:</strong> África, América, Antártida, Asia, Europa, Oceanía</li>
-            <li><strong>Océanos:</strong> Pacífico, Atlántico, Índico, Ártico, Antártico</li>
-          </ul>
-          <div className="mt-3">
-            <button
-              className="px-3 py-2 rounded-md bg-indigo-500 text-white"
-              onClick={() => setSpinning((s) => !s)}
-            >
-              {spinning ? "Pausar Rotación" : "Reanudar Rotación"}
-            </button>
-          </div>
-        </div>
-
-        <div className="rounded-xl bg-white/70 dark:bg-slate-800 p-4 shadow lg:col-span-2">
-          <h3 className="font-bold text-lg mb-2">Ciudad seleccionada</h3>
-          {selected ? (
-            <div className="text-sm">
-              <p><strong>{selected.name}</strong> — {selected.country}</p>
-              {selected.population && <p>Población aprox.: {selected.population.toLocaleString("es-CO")}</p>}
-              <p>Lat: {selected.lat.toFixed(3)}°, Lon: {selected.lon.toFixed(3)}°</p>
-              <p className="opacity-80 mt-2">
-                Consejo: puedes orbitar con el mouse y tocar los puntos para cambiar de ciudad.
-              </p>
-            </div>
-          ) : (
-            <p className="opacity-80">Toca un marcador en el globo para ver detalles.</p>
-          )}
-        </div>
-      </div>
+      {/* No extra panels: keep screen clean and focused on globe */}
     </div>
   );
 }
