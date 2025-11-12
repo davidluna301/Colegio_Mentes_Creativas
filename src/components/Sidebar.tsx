@@ -18,10 +18,10 @@ interface SidebarItem {
 }
 
 const mainItems: SidebarItem[] = [
-  { label: "Inicio", route: "/", icon: <FaHome />, emoji: "🏠" },
-  { label: "Ciclo del Agua", route: "/FlujoAgua", icon: <FaWater />, emoji: "💧" },
-  { label: "Bloques 3D", route: "/bloques", icon: <FaCube />, emoji: "🧊" },
-  { label: "Globo Interactivo", route: "/globo", icon: <FaGlobeAmericas />, emoji: "🌎" },
+  { label: "Inicio", route: "/", icon: <FaHome />, emoji: "" },
+  { label: "Ciclo del Agua", route: "/FlujoAgua", icon: <FaWater />, emoji: "" },
+  { label: "Bloques 3D", route: "/bloques", icon: <FaCube />, emoji: "" },
+  { label: "Globo Interactivo", route: "/globo", icon: <FaGlobeAmericas />, emoji: "" },
 ];
 
 export default function Sidebar() {
@@ -215,9 +215,7 @@ export default function Sidebar() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
-        >
-          <p>¡Elige tu aventura!</p>
-          <p className="text-[#FF6F00]">✨ Aprender nunca fue tan divertido ✨</p>
+        >      
         </motion.div>
       </div>
     </motion.aside>
