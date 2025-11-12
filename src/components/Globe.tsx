@@ -50,6 +50,7 @@ function GlobeMesh({ spinning, texture, showTexture }: { spinning: boolean; text
   );
 }
 
+/* eslint-disable no-unused-vars */
 function CityMarker({ city, selected, onSelect }: { city: City; selected: boolean; onSelect: (c: City) => void }) {
   const pos = useMemo(() => latLonToVec3(city.lat, city.lon, 3.05), [city]);
   return (
@@ -64,6 +65,7 @@ function CityMarker({ city, selected, onSelect }: { city: City; selected: boolea
     </mesh>
   );
 }
+/* eslint-enable no-unused-vars */
 
 export default function Globe() {
   const [selected, setSelected] = useState<City | null>(CITIES[0]);
@@ -124,8 +126,8 @@ export default function Globe() {
           <ambientLight intensity={0.55} />
           <directionalLight position={[5, 5, 5]} intensity={0.9} castShadow shadow-mapSize={[1024,1024]} />
           <GlobeMesh spinning={spinning} texture={showMap?mapTexture:undefined} showTexture={showMap} />
-          {CITIES.map(c=> (
-            <CityMarker key={c.name} city={c} selected={selected?.name===c.name} onSelect={setSelected} />
+          {CITIES.map((city)=> (
+            <CityMarker key={city.name} city={city} selected={selected?.name===city.name} onSelect={setSelected} />
           ))}
           <OrbitControls enablePan={false} onStart={()=> setSpinning(false)} onEnd={()=> setSpinning(true)} />
         </Canvas>

@@ -24,6 +24,7 @@ function Voxel({
 }: {
   position: [number, number, number];
   color: string;
+  /* eslint-disable-next-line no-unused-vars */
   onClickVoxel: (e: ThreeEvent<MouseEvent>) => void;
 }) {
   const ref = useRef<THREE.Mesh>(null!);
@@ -122,7 +123,7 @@ export default function BlockBuilder() {
         o.stop();
         ctx.close();
       }, 120);
-    } catch (e) {
+    } catch {
       // ignore audio errors in some environments
     }
   }
@@ -182,7 +183,7 @@ export default function BlockBuilder() {
       for (const v of arr) map.set(v.key, v.type);
       setVoxels(map);
       playSound("place");
-    } catch (err) {
+    } catch {
       playSound("error");
       alert("JSON inválido");
     }

@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // Este archivo extiende el entorno de prueba de Jest.
 
 import "@testing-library/jest-dom";
