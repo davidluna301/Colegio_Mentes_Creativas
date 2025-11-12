@@ -79,7 +79,7 @@ export default function HomeContent() {
           >
             🚀 Donde el aprendizaje es una <span className="text-[#FF4081] font-bold">aventura épica</span> 
             <br />
-            y cada idea se convierte en una <span className="text-[#7B1FA2] font-bold">superpoder</span> ✨
+            y cada idea se convierte en un <span className="text-[#7B1FA2] font-bold">superpoder</span> ✨
           </motion.p>
 
           {/* Descripción principal */}
