@@ -128,13 +128,22 @@ export default function BlockBuilder() {
     }
   }
 
-  // Handle clicking on existing voxel: place adjacent (build) or delete
+// Handle clicking on existing voxel: place adjacent (build) or delete
   const handleVoxelPointer = useCallback((e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     // Get clicked voxel position
     const [vx, vy, vz] = (e.object as THREE.Mesh).position.toArray().map(Math.round);
     if (mode === "Borrar" || e.shiftKey) {
-      removeVoxel(vx, vy, vz);
+      const k = keyOf(vx, vy, vz);
+      setVoxels((prev) => {
+        if (!prev.has(k)) return prev;
+        const next = new Map(prev);
+        const removed = prev.get(k);
+        next.delete(k);
+        setLastAction({ type: "remove", key: k, block: removed });
+        playSound("remove");
+        return next;
+      });
       return;
     }
     // Figure out the face normal to place adjacent block
@@ -147,7 +156,7 @@ export default function BlockBuilder() {
     const ny = Math.round(worldNormal.y);
     const nz = Math.round(worldNormal.z);
     addVoxel(vx + nx, vy + ny, vz + nz);
-  }, [addVoxel, removeVoxel, mode]);
+  }, [addVoxel, mode, tipo]);
 
   // Handle ground clicks: place on grid at y=0
   const handleGroundPointer = useCallback((e: ThreeEvent<MouseEvent>) => {

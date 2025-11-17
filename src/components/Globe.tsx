@@ -1,137 +1,237 @@
-import { useMemo, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Stars, Sky } from "@react-three/drei";
+import { useMemo, useRef, useState, Suspense } from "react";
+import { Canvas, useFrame, useLoader } from "@react-three/fiber";
+import { OrbitControls, Stars } from "@react-three/drei";
 import * as THREE from "three";
+import { MapPin, Globe as GlobeIcon, Users, Navigation } from "lucide-react";
 
-type City = { name: string; country: string; lat: number; lon: number; population?: number };
+type City = { 
+  name: string; 
+  country: string; 
+  lat: number; 
+  lon: number; 
+  population: number;
+  continent: string;
+};
 
 const CITIES: City[] = [
-  { name: "Bogotá", country: "Colombia", lat: 4.711, lon: -74.072, population: 7744000 },
-  { name: "Ciudad de México", country: "México", lat: 19.4326, lon: -99.1332, population: 9200000 },
-  { name: "Nueva York", country: "Estados Unidos", lat: 40.7128, lon: -74.006, population: 8800000 },
-  { name: "Tokio", country: "Japón", lat: 35.6762, lon: 139.6503, population: 13960000 },
-  { name: "París", country: "Francia", lat: 48.8566, lon: 2.3522, population: 2148000 },
-  { name: "Sídney", country: "Australia", lat: -33.8688, lon: 151.2093, population: 5230000 },
+  { name: "Bogotá", country: "Colombia", lat: 4.711, lon: -74.072, population: 7744000, continent: "América del Sur" },
+  { name: "Ciudad de México", country: "México", lat: 19.4326, lon: -99.1332, population: 9200000, continent: "América del Norte" },
+  { name: "Nueva York", country: "Estados Unidos", lat: 40.7128, lon: -74.006, population: 8800000, continent: "América del Norte" },
+  { name: "Los Ángeles", country: "Estados Unidos", lat: 34.0522, lon: -118.2437, population: 3900000, continent: "América del Norte" },
+  { name: "Londres", country: "Reino Unido", lat: 51.5074, lon: -0.1278, population: 9000000, continent: "Europa" },
+  { name: "París", country: "Francia", lat: 48.8566, lon: 2.3522, population: 2148000, continent: "Europa" },
+  { name: "Berlín", country: "Alemania", lat: 52.52, lon: 13.405, population: 3645000, continent: "Europa" },
+  { name: "Madrid", country: "España", lat: 40.4168, lon: -3.7038, population: 3223000, continent: "Europa" },
+  { name: "Tokio", country: "Japón", lat: 35.6762, lon: 139.6503, population: 13960000, continent: "Asia" },
+  { name: "Pekín", country: "China", lat: 39.9042, lon: 116.4074, population: 21540000, continent: "Asia" },
+  { name: "Shanghái", country: "China", lat: 31.2304, lon: 121.4737, population: 24280000, continent: "Asia" },
+  { name: "Seúl", country: "Corea del Sur", lat: 37.5665, lon: 126.978, population: 9776000, continent: "Asia" },
+  { name: "Mumbai", country: "India", lat: 19.076, lon: 72.8777, population: 12442000, continent: "Asia" },
+  { name: "Sídney", country: "Australia", lat: -33.8688, lon: 151.2093, population: 5230000, continent: "Oceanía" },
+  { name: "São Paulo", country: "Brasil", lat: -23.5505, lon: -46.6333, population: 12330000, continent: "América del Sur" },
+  { name: "Buenos Aires", country: "Argentina", lat: -34.6037, lon: -58.3816, population: 3075000, continent: "América del Sur" },
+  { name: "El Cairo", country: "Egipto", lat: 30.0444, lon: 31.2357, population: 9500000, continent: "África" },
+  { name: "Ciudad del Cabo", country: "Sudáfrica", lat: -33.9249, lon: 18.4241, population: 4618000, continent: "África" },
+  { name: "Dubái", country: "Emiratos Árabes", lat: 25.2048, lon: 55.2708, population: 3331000, continent: "Asia" },
+  { name: "Moscú", country: "Rusia", lat: 55.7558, lon: 37.6173, population: 12500000, continent: "Europa" },
 ];
 
-function latLonToVec3(lat: number, lon: number, radius: number) {
-  const phi = (90 - lat) * (Math.PI / 180);
-  const theta = (lon + 180) * (Math.PI / 180);
+const EARTH_TEXTURE_URL = "/textures/earth.jpg";
+const EARTH_BUMP_URL = "/textures/earth-bump.jpg";
+
+const EARTH_RADIUS = 2.2;
+
+const degToRad = (deg: number) => (deg * Math.PI) / 180;
+
+const latLonToVector3 = (lat: number, lon: number, radius = EARTH_RADIUS) => {
+  const phi = degToRad(90 - lat);
+  const theta = degToRad(lon + 180);
+
   const x = -radius * Math.sin(phi) * Math.cos(theta);
   const z = radius * Math.sin(phi) * Math.sin(theta);
   const y = radius * Math.cos(phi);
-  return new THREE.Vector3(x, y, z);
-}
 
-function GlobeMesh({ spinning, texture, showTexture }: { spinning: boolean; texture?: THREE.Texture; showTexture: boolean }) {
-  const ref = useRef<THREE.Mesh>(null!);
-  useFrame((_, dt) => { if (spinning && ref.current) ref.current.rotation.y += dt * 0.2; });
+  return new THREE.Vector3(x, y, z);
+};
+
+type CityMarkerProps = {
+  city: City;
+  isSelected: boolean;
+  onSelect: (city: City) => void;
+};
+
+const CityMarker = ({ city, isSelected, onSelect }: CityMarkerProps) => {
+  const position = useMemo(() => latLonToVector3(city.lat, city.lon), [city.lat, city.lon]);
+
   return (
-    <group>
-      <mesh ref={ref} castShadow receiveShadow>
-        <sphereGeometry args={[3, 96, 96]} />
-        {showTexture && texture ? (
-          <meshStandardMaterial map={texture} roughness={0.9} metalness={0} />
-        ) : (
-          <meshStandardMaterial color="#9bd1ff" roughness={0.85} metalness={0} />
-        )}
-        {!showTexture && (
-          <mesh>
-            <sphereGeometry args={[3.01, 96, 96]} />
-            <meshStandardMaterial color="#4caf50" wireframe opacity={0.35} transparent />
-          </mesh>
-        )}
-      </mesh>
+    <group
+      position={position.toArray() as [number, number, number]}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect(city);
+      }}
+    >
       <mesh>
-        <sphereGeometry args={[3.15, 64, 64]} />
-        <meshBasicMaterial color="#5ecbff" transparent opacity={0.12} blending={THREE.AdditiveBlending} side={THREE.BackSide} />
+        <sphereGeometry args={[isSelected ? 0.09 : 0.07, 16, 16]} />
+        <meshStandardMaterial color={isSelected ? "#f97316" : "#38bdf8"} />
+      </mesh>
+      <mesh position={[0, 0.2, 0]}
+        scale={isSelected ? 1.2 : 1}
+      >
+        <coneGeometry args={[0.02, 0.12, 8]} />
+        <meshStandardMaterial color="#0ea5e9" />
       </mesh>
     </group>
   );
-}
+};
 
-/* eslint-disable no-unused-vars */
-function CityMarker({ city, selected, onSelect }: { city: City; selected: boolean; onSelect: (c: City) => void }) {
-  const pos = useMemo(() => latLonToVec3(city.lat, city.lon, 3.05), [city]);
+type GlobeMeshProps = {
+  isRotating: boolean;
+  onSelectCity: (city: City) => void;
+  selectedCity: City;
+};
+
+const GlobeMesh = ({ isRotating, onSelectCity, selectedCity }: GlobeMeshProps) => {
+  const globeRef = useRef<THREE.Mesh>(null);
+  const texture = useLoader(THREE.TextureLoader, EARTH_TEXTURE_URL);
+  const bump = useLoader(THREE.TextureLoader, EARTH_BUMP_URL);
+
+  useFrame((_, delta) => {
+    if (isRotating && globeRef.current) {
+      globeRef.current.rotation.y += delta * 0.1;
+    }
+  });
+
   return (
-    <mesh
-      position={pos}
-      onPointerDown={(e) => { e.stopPropagation(); onSelect(city); }}
-      castShadow
-      receiveShadow
-    >
-      <sphereGeometry args={[selected ? 0.12 : 0.085, 16, 16]} />
-      <meshStandardMaterial color={selected ? "#ff7043" : "#fdd835"} emissive={selected ? "#ff7043" : "#fdd835"} emissiveIntensity={0.2} />
-    </mesh>
+    <group>
+      <mesh ref={globeRef}>
+        <sphereGeometry args={[EARTH_RADIUS, 64, 64]} />
+        <meshPhongMaterial map={texture} bumpMap={bump} bumpScale={0.05} shininess={10} />
+      </mesh>
+      {CITIES.map((city) => (
+        <CityMarker
+          key={city.name}
+          city={city}
+          isSelected={selectedCity.name === city.name}
+          onSelect={onSelectCity}
+        />
+      ))}
+    </group>
   );
-}
-/* eslint-enable no-unused-vars */
+};
+
+const numberFormatter = new Intl.NumberFormat("es-ES");
 
 export default function Globe() {
-  const [selected, setSelected] = useState<City | null>(CITIES[0]);
-  const [spinning, setSpinning] = useState(true);
-  const [showMap, setShowMap] = useState(true);
+  const [selectedCity, setSelectedCity] = useState(CITIES[0]);
+  const [isRotating, setIsRotating] = useState(true);
 
-  // Textura muy sencilla dibujando continentes como polígonos sobre proyección equirectangular
-  const mapTexture = useMemo(() => {
-    const w = 1024, h = 512;
-    const canvas = document.createElement('canvas');
-    canvas.width = w; canvas.height = h;
-    const ctxTmp = canvas.getContext('2d');
-    if (!ctxTmp) return undefined;
-    const ctx: CanvasRenderingContext2D = ctxTmp;
-    ctx.fillStyle = '#2064a8'; // océano
-    ctx.fillRect(0,0,w,h);
-    const PX = (lon:number)=> (lon+180)/360*w;
-    const PY = (lat:number)=> (90-lat)/180*h;
-    function drawPoly(list:[number,number][], fill='#3ca55b') {
-      ctx.beginPath();
-      list.forEach(([lon,lat],i)=>{ const x=PX(lon), y=PY(lat); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
-      ctx.closePath();
-      ctx.fillStyle = fill;
-      ctx.fill();
-    }
-    // Polígonos muy simplificados
-    drawPoly([[-170,72],[-150,60],[-130,55],[-105,50],[-95,45],[-85,30],[-95,20],[-110,25],[-125,40],[-150,58]]); // N. América
-    drawPoly([[-81,12],[-75,-2],[-70,-15],[-63,-25],[-54,-45],[-45,-35],[-40,-10],[-50,5]]); // S. América
-    drawPoly([[-18,34],[-10,20],[5,10],[12,-10],[25,-28],[38,-20],[32,5],[20,25],[5,35]]); // África
-    drawPoly([[-10,60],[0,50],[15,52],[30,48],[25,60],[10,65]]); // Europa
-    drawPoly([[30,55],[45,50],[60,55],[90,46],[120,45],[135,55],[150,60],[140,70],[120,65],[90,56],[60,55],[42,56]]); // Asia
-    drawPoly([[113,-10],[120,-25],[140,-35],[155,-30],[150,-15],[132,-10]]); // Australia
-    drawPoly([[-50,82],[-40,78],[-25,76],[-30,84]]); // Groenlandia
-    drawPoly([[-180,-60],[-120,-70],[-60,-74],[-30,-75],[30,-76],[90,-72],[150,-66],[180,-60]]); // Antártida
-    // Sutil gradiente de iluminación
-    const grad = ctx.createLinearGradient(0,0,w,h); grad.addColorStop(0,'rgba(255,255,255,0.08)'); grad.addColorStop(1,'rgba(0,0,40,0.25)');
-    ctx.fillStyle = grad; ctx.fillRect(0,0,w,h);
-    const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4; return tex;
-  }, []);
+  const continents = useMemo(() => Array.from(new Set(CITIES.map((city) => city.continent))), []);
+  const totalPopulation = useMemo(() =>
+    CITIES.reduce((acc, city) => acc + city.population, 0),
+  []);
+
+  const handleSelectCity = (city: City) => {
+    setSelectedCity(city);
+  };
 
   return (
-    <div className="w-full h-full flex flex-col gap-3">
-      <div className="flex items-center gap-3 p-3 rounded-xl bg-white/90 shadow text-sm">
-        <button className={`px-3 py-2 rounded-md ${spinning?"bg-indigo-600 text-white":"bg-indigo-100 text-indigo-700"}`} onClick={()=> setSpinning(s=>!s)}>
-          {spinning?"Pausar rotación":"Rotar"}
-        </button>
-        <button className={`px-3 py-2 rounded-md ${showMap?"bg-green-600 text-white":"bg-green-100 text-green-700"}`} onClick={()=> setShowMap(m=>!m)}>
-          {showMap?"Quitar mapa":"Mostrar mapa"}
-        </button>
-        {selected && (
-          <span><strong>{selected.name}</strong> ({selected.country}) • Lat {selected.lat.toFixed(1)} Lon {selected.lon.toFixed(1)}</span>
-        )}
+    <section className="space-y-8" data-testid="globe-experience">
+      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr,0.8fr] gap-6">
+        <div className="rounded-3xl bg-white/80 dark:bg-slate-900/50 backdrop-blur shadow-xl border border-white/40">
+          <div className="p-6 border-b border-white/30 flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <span className="p-2 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20">
+                <GlobeIcon className="h-6 w-6" />
+              </span>
+              <div>
+                <p className="text-sm uppercase tracking-wide text-slate-500">Globo interactivo</p>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Mapa global educativo</h2>
+              </div>
+            </div>
+            <p className="text-slate-600 dark:text-slate-300 text-sm">
+              Explora ciudades clave en todos los continentes. Usa el botón para pausar la rotación
+              y haz click sobre los marcadores para consultar los datos destacados.
+            </p>
+            <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+              <span className="inline-flex items-center gap-1"><Users className="h-4 w-4" /> Población total aproximada: {numberFormatter.format(totalPopulation)}</span>
+              <span className="inline-flex items-center gap-1"><Navigation className="h-4 w-4" /> Continentes activos: {continents.length}</span>
+            </div>
+            <button
+              className="self-start px-4 py-2 rounded-full bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition"
+              onClick={() => setIsRotating((prev) => !prev)}
+            >
+              {isRotating ? "Pausar Rotación" : "Reanudar Rotación"}
+            </button>
+          </div>
+
+          <div className="h-[420px]">
+            <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
+              <ambientLight intensity={0.7} />
+              <directionalLight position={[5, 5, 5]} intensity={1} />
+              <directionalLight position={[-5, -5, -5]} intensity={0.4} color="#83c5be" />
+              <Stars radius={80} depth={50} count={2000} factor={4} fade />
+              <Suspense fallback={null}>
+                <GlobeMesh isRotating={isRotating} onSelectCity={handleSelectCity} selectedCity={selectedCity} />
+              </Suspense>
+              <OrbitControls enablePan={false} enableZoom={false} autoRotate={false} />
+            </Canvas>
+          </div>
+        </div>
+
+        <aside className="space-y-6">
+          <article className="rounded-2xl bg-white/80 dark:bg-slate-900/50 border border-white/40 shadow p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <MapPin className="text-rose-500" />
+              <h3 className="font-semibold text-lg text-slate-900 dark:text-white">Ciudad seleccionada</h3>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              <strong className="text-base text-slate-900 dark:text-white">{selectedCity.name}</strong> — {selectedCity.country}
+            </p>
+            <p className="text-sm text-slate-500 mt-1">Población aprox.: {numberFormatter.format(selectedCity.population)}</p>
+            <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-2">
+              <p>Latitud: {selectedCity.lat}°</p>
+              <p>Longitud: {selectedCity.lon}°</p>
+              <p className="col-span-2">Continente: {selectedCity.continent}</p>
+            </div>
+            <p className="text-xs text-slate-500 mt-4">
+              Consejo: puedes orbitar con el mouse y tocar los puntos para cambiar de ciudad.
+            </p>
+          </article>
+
+          <article className="rounded-2xl bg-white/80 dark:bg-slate-900/50 border border-white/40 shadow p-5">
+            <h3 className="font-semibold text-lg text-slate-900 dark:text-white mb-3">Datos básicos 🌍</h3>
+            <ul className="text-sm text-slate-600 dark:text-slate-300 space-y-2">
+              <li><strong>Radio:</strong> ~6,371 km</li>
+              <li><strong>Diámetro:</strong> ~12,742 km</li>
+              <li><strong>Edad:</strong> ~4.54 mil millones de años</li>
+              <li><strong>Continentes:</strong> África, América, Antártida, Asia, Europa, Oceanía</li>
+              <li><strong>Océanos:</strong> Pacífico, Atlántico, Índico, Ártico, Antártico</li>
+            </ul>
+          </article>
+        </aside>
       </div>
-      <div className="flex-1 min-h-[420px] rounded-xl overflow-hidden shadow bg-slate-100 dark:bg-slate-900">
-        <Canvas shadows camera={{ position: [0, 0, 8], fov: 45 }} dpr={[1, 2]} gl={{ antialias: true }}>
-          <Stars radius={80} depth={50} count={2500} factor={4} saturation={0} fade />
-          <Sky distance={450000} sunPosition={[10, 3, -10]} inclination={0.52} azimuth={0.2} />
-          <ambientLight intensity={0.55} />
-          <directionalLight position={[5, 5, 5]} intensity={0.9} castShadow shadow-mapSize={[1024,1024]} />
-          <GlobeMesh spinning={spinning} texture={showMap?mapTexture:undefined} showTexture={showMap} />
-          {CITIES.map((city)=> (
-            <CityMarker key={city.name} city={city} selected={selected?.name===city.name} onSelect={setSelected} />
+
+      <div className="rounded-3xl bg-white/80 dark:bg-slate-900/50 border border-white/40 shadow-xl p-6">
+        <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">Ciudades incluidas</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {CITIES.map((city) => (
+            <button
+              key={city.name}
+              className={`text-left p-4 rounded-2xl border transition shadow-sm hover:shadow-md ${
+                selectedCity.name === city.name
+                  ? "border-indigo-500 bg-indigo-50/70 dark:bg-indigo-500/10"
+                  : "border-white/40 bg-white/50"
+              }`}
+              onClick={() => handleSelectCity(city)}
+            >
+              <p className="font-semibold text-slate-900 dark:text-white">{city.name}</p>
+              <p className="text-sm text-slate-500">{city.country}</p>
+              <p className="text-xs text-slate-400 mt-1">{city.continent}</p>
+            </button>
           ))}
-          <OrbitControls enablePan={false} onStart={()=> setSpinning(false)} onEnd={()=> setSpinning(true)} />
-        </Canvas>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
