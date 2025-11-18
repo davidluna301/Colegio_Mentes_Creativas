@@ -8,13 +8,6 @@ const Cloud = ({ size = 18, className = "", ...props }: IconProps) => (
   </svg>
 );
 
-const Sun = ({ size = 18, className = "", ...props }: IconProps) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} {...props}>
-    <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 const Droplets = ({ size = 18, className = "", ...props }: IconProps) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} {...props}>
     <path d="M12 3s5 5.5 5 9a5 5 0 1 1-10 0c0-3.5 5-9 5-9z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -142,8 +135,11 @@ export default function WaterCycle() {
         {/* Panel de visualización */}
         <div className="flex-1 flex flex-col gap-4">
           <div
+            role="region"
+            aria-label="Visualización del ciclo del agua"
+            data-testid="water-cycle"
             className={`relative w-full aspect-[16/9] rounded-2xl border-2 border-sky-300 bg-gradient-to-t from-sky-200 via-sky-100 to-sky-50 overflow-hidden shadow-2xl transition-all ${
-              paused ? "opacity-60" : ""
+              paused ? "opacity-60 paused" : ""
             }`}
           >
             <svg viewBox="0 0 800 450" className="w-full h-full">

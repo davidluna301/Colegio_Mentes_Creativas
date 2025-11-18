@@ -15,7 +15,7 @@ describe("FlujoAgua Component", () => {
 
   test("el botón pausa y reanuda cambiando texto y clase", () => {
     render(<FlujoAgua />);
-    const button = screen.getByRole("button");
+    const button = screen.getByRole("button", { name: /pausar|reanudar/i });
     const container = screen.getByTestId("water-cycle");
 
     expect(container.className).not.toMatch(/paused/);
