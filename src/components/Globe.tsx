@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, Suspense } from "react";
+import { useMemo, useRef, useState, Suspense, Dispatch, SetStateAction } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { OrbitControls, Stars } from "@react-three/drei";
 import * as THREE from "three";
@@ -54,11 +54,11 @@ const latLonToVector3 = (lat: number, lon: number, radius = EARTH_RADIUS) => {
   return new THREE.Vector3(x, y, z);
 };
 
-type CityMarkerProps = {
+interface CityMarkerProps {
   city: City;
   isSelected: boolean;
-  onSelect: (city: City) => void;
-};
+  onSelect: Dispatch<SetStateAction<City>>;
+}
 
 const CityMarker = ({ city, isSelected, onSelect }: CityMarkerProps) => {
   const position = useMemo(() => latLonToVector3(city.lat, city.lon), [city.lat, city.lon]);
@@ -85,11 +85,11 @@ const CityMarker = ({ city, isSelected, onSelect }: CityMarkerProps) => {
   );
 };
 
-type GlobeMeshProps = {
+interface GlobeMeshProps {
   isRotating: boolean;
-  onSelectCity: (city: City) => void;
+  onSelectCity: Dispatch<SetStateAction<City>>;
   selectedCity: City;
-};
+}
 
 const GlobeMesh = ({ isRotating, onSelectCity, selectedCity }: GlobeMeshProps) => {
   const globeRef = useRef<THREE.Mesh>(null);
@@ -126,14 +126,14 @@ export default function Globe() {
   const [selectedCity, setSelectedCity] = useState(CITIES[0]);
   const [isRotating, setIsRotating] = useState(true);
 
-  const continents = useMemo(() => Array.from(new Set(CITIES.map((city) => city.continent))), []);
-  const totalPopulation = useMemo(() =>
-    CITIES.reduce((acc, city) => acc + city.population, 0),
-  []);
-
-  const handleSelectCity = (city: City) => {
-    setSelectedCity(city);
-  };
+  const continents = useMemo(
+    () => Array.from(new Set(CITIES.map(({ continent }) => continent))),
+    [],
+  );
+  const totalPopulation = useMemo(
+    () => CITIES.reduce((acc, { population }) => acc + population, 0),
+    [],
+  );
 
   return (
     <section className="space-y-8" data-testid="globe-experience">
@@ -172,7 +172,7 @@ export default function Globe() {
               <directionalLight position={[-5, -5, -5]} intensity={0.4} color="#83c5be" />
               <Stars radius={80} depth={50} count={2000} factor={4} fade />
               <Suspense fallback={null}>
-                <GlobeMesh isRotating={isRotating} onSelectCity={handleSelectCity} selectedCity={selectedCity} />
+                <GlobeMesh isRotating={isRotating} onSelectCity={setSelectedCity} selectedCity={selectedCity} />
               </Suspense>
               <OrbitControls enablePan={false} enableZoom={false} autoRotate={false} />
             </Canvas>
@@ -223,7 +223,7 @@ export default function Globe() {
                   ? "border-indigo-500 bg-indigo-50/70 dark:bg-indigo-500/10"
                   : "border-white/40 bg-white/50"
               }`}
-              onClick={() => handleSelectCity(city)}
+              onClick={() => setSelectedCity(city)}
             >
               <p className="font-semibold text-slate-900 dark:text-white">{city.name}</p>
               <p className="text-sm text-slate-500">{city.country}</p>
