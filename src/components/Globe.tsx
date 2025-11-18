@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState, Suspense, Dispatch, SetStateAction } from "react";
+import { useMemo, useRef, useState, Suspense, Dispatch, SetStateAction, useEffect } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { OrbitControls, Stars } from "@react-three/drei";
 import * as THREE from "three";
-import { MapPin, Globe as GlobeIcon, Users, Navigation } from "lucide-react";
+import { MapPin, Globe as GlobeIcon, Users, Navigation, Volume2, VolumeX } from "lucide-react";
+
 
 type City = { 
   name: string; 
@@ -92,19 +93,19 @@ interface GlobeMeshProps {
 }
 
 const GlobeMesh = ({ isRotating, onSelectCity, selectedCity }: GlobeMeshProps) => {
-  const globeRef = useRef<THREE.Mesh>(null);
+  const groupRef = useRef<THREE.Group>(null);
   const texture = useLoader(THREE.TextureLoader, EARTH_TEXTURE_URL);
   const bump = useLoader(THREE.TextureLoader, EARTH_BUMP_URL);
 
   useFrame((_, delta) => {
-    if (isRotating && globeRef.current) {
-      globeRef.current.rotation.y += delta * 0.1;
+    if (isRotating && groupRef.current) {
+      groupRef.current.rotation.y += delta * 0.1;
     }
   });
 
   return (
-    <group>
-      <mesh ref={globeRef}>
+    <group ref={groupRef}>
+      <mesh>
         <sphereGeometry args={[EARTH_RADIUS, 64, 64]} />
         <meshPhongMaterial map={texture} bumpMap={bump} bumpScale={0.05} shininess={10} />
       </mesh>
@@ -125,6 +126,43 @@ const numberFormatter = new Intl.NumberFormat("es-ES");
 export default function Globe() {
   const [selectedCity, setSelectedCity] = useState(CITIES[0]);
   const [isRotating, setIsRotating] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  
+  useEffect(() => {
+    const previousTitle = document.title;
+    document.title = `Explorando ${selectedCity.name} | Globo educativo`;
+    return () => {
+      document.title = previousTitle;
+    };
+  }, [selectedCity.name]);
+
+  useEffect(() => {
+    if (audioEnabled && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      
+      const text = `${selectedCity.name}, ${selectedCity.country}. Población aproximada: ${numberFormatter.format(selectedCity.population)} habitantes. Continente: ${selectedCity.continent}. Coordenadas: latitud ${selectedCity.lat} grados, longitud ${selectedCity.lon} grados.`;
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'es-ES';
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+      
+      setTimeout(() => {
+        window.speechSynthesis.speak(utterance);
+      }, 100);
+    }
+    
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [selectedCity, audioEnabled]);
 
   const continents = useMemo(
     () => Array.from(new Set(CITIES.map(({ continent }) => continent))),
@@ -156,13 +194,32 @@ export default function Globe() {
             <div className="flex flex-wrap gap-4 text-xs text-slate-500">
               <span className="inline-flex items-center gap-1"><Users className="h-4 w-4" /> Población total aproximada: {numberFormatter.format(totalPopulation)}</span>
               <span className="inline-flex items-center gap-1"><Navigation className="h-4 w-4" /> Continentes activos: {continents.length}</span>
+              {isSpeaking && <span className="inline-flex items-center gap-1 text-green-600 font-semibold"><Volume2 className="h-4 w-4 animate-pulse" /> Reproduciendo audio...</span>}
             </div>
-            <button
-              className="self-start px-4 py-2 rounded-full bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition"
-              onClick={() => setIsRotating((prev) => !prev)}
-            >
-              {isRotating ? "Pausar Rotación" : "Reanudar Rotación"}
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <button
+                className="px-4 py-2 rounded-full bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition"
+                onClick={() => setIsRotating((prev) => !prev)}
+              >
+                {isRotating ? "Pausar Rotación" : "Reanudar Rotación"}
+              </button>
+              <button
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition inline-flex items-center gap-2 ${
+                  audioEnabled 
+                    ? "bg-green-600 text-white hover:bg-green-500" 
+                    : "bg-slate-300 text-slate-600 hover:bg-slate-400"
+                }`}
+                onClick={() => {
+                  setAudioEnabled((prev) => !prev);
+                  if (audioEnabled && 'speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                  }
+                }}
+              >
+                {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                {audioEnabled ? "Audio On" : "Audio Off"}
+              </button>
+            </div>
           </div>
 
           <div className="h-[420px]">
@@ -194,7 +251,8 @@ export default function Globe() {
               <p>Longitud: {selectedCity.lon}°</p>
               <p className="col-span-2">Continente: {selectedCity.continent}</p>
             </div>
-            <p className="text-xs text-slate-500 mt-4">
+            <p className="text-xs text-slate-500 mt-4 inline-flex items-center gap-1">
+              <Volume2 className="h-4 w-4 text-indigo-500" />
               Consejo: puedes orbitar con el mouse y tocar los puntos para cambiar de ciudad.
             </p>
           </article>

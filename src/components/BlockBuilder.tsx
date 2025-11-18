@@ -250,7 +250,7 @@ export default function BlockBuilder() {
         </div>
 
         {/* short horizontal hint */}
-        <span className="text-sm opacity-80 hidden md:inline">
+        <span className="text-sm opacity-80 hidden md:inline text-gray-950">
           Toca el piso para poner bloques. Usa 🧹 para borrar. Mantén Shift para borrar rápido.
         </span>
 
